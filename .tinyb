@@ -1,0 +1,14 @@
+{
+    "host": "https://api.europe-west2.gcp.tinybird.co",
+    "id": "9191d5dd-f250-44a4-8646-3d16e2503715",
+    "name": "rubik_test_workspace",
+    "scope": "user",
+    "token": "p.eyJ1IjogIjkxOTFkNWRkLWYyNTAtNDRhNC04NjQ2LTNkMTZlMjUwMzcxNSIsICJpZCI6ICIxNDA4MDM3MC1jMGQzLTQyYWYtOTcyMy04M2UyYzc2MTQyNzEiLCAiaG9zdCI6ICJnY3AtZXVyb3BlLXdlc3QyIn0.eHslqojzLLTNliOfmeCtzX0gsisksMHI-XJgFdbm20E",
+    "tokens": {
+        "https://api.europe-west2.gcp.tinybird.co": "p.eyJ1IjogIjkxOTFkNWRkLWYyNTAtNDRhNC04NjQ2LTNkMTZlMjUwMzcxNSIsICJpZCI6ICIxNDA4MDM3MC1jMGQzLTQyYWYtOTcyMy04M2UyYzc2MTQyNzEiLCAiaG9zdCI6ICJnY3AtZXVyb3BlLXdlc3QyIn0.eHslqojzLLTNliOfmeCtzX0gsisksMHI-XJgFdbm20E"
+    },
+    "user_email": "mike.mike18.mg98@gmail.com",
+    "user_id": "8a082a7f-7b6a-46b2-a384-40f8041879b5",
+    "user_token": "p.eyJ1IjogIjhhMDgyYTdmLTdiNmEtNDZiMi1hMzg0LTQwZjgwNDE4NzliNSIsICJpZCI6ICI1YjNiMzUxZi05YWI3LTRiOGEtOTczMy02Y2M5YzMxODUyNzUiLCAiaG9zdCI6ICJnY3AtZXVyb3BlLXdlc3QyIn0.txZgejkGreIw5BYcjpvGHy1fhDUYujocir01zD5VFtk",
+    "version": "4.5.0"
+}
