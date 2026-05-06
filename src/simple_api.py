@@ -1,5 +1,25 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
+from datetime import datetime
+from enum import Enum
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+from pydantic import BaseModel, Field, ValidationError
+
+
+class EventType(str, Enum):
+    PRODUCT_VIEW = "product_view"
+    ADD_TO_CART = "add_to_cart"
+    PURCHASE = "purchase"
+
+
+class Event(BaseModel):
+    event_id: int
+    user_id: int
+    event_type: EventType
+    product_id: int
+    timestamp: datetime
+    price: float = Field(gt=0)
+    country: str
 
 
 class EventsView:
@@ -41,6 +61,20 @@ class SimpleAPIHandler(BaseHTTPRequestHandler):
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode())
+
+            for event_data in data["events"]:
+                try:
+                    event = Event(**event_data)
+                    print(f"Validated event: {event}")
+                except ValidationError as e:
+                    # print(f"Invalid event data: {e}")
+                    self._set_headers(400)
+                    self.wfile.write(
+                        json.dumps(
+                            {"message": "Invalid event data", "errors": e.errors()}
+                        ).encode()
+                    )
+                    return
 
             response = view.post(data)
             self._set_headers()
