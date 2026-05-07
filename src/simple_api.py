@@ -26,7 +26,7 @@ class Event(BaseModel):
     country: str
 
 
-class EventsView:
+class GetMetricsView:
     def get(self, query_params):
 
         start_date = query_params.get("start_date", ["2026-01-01 00:00:00"])[0]
@@ -82,6 +82,9 @@ class EventsView:
             }
         }
 
+
+class EventsView:
+
     def post(self, data):
         valid_events = []
         invalid_events = []
@@ -117,6 +120,7 @@ class EventsView:
 
 routes = {
     "/api/events": EventsView,
+    "/api/get_metrics": GetMetricsView,
 }
 
 
