@@ -3,8 +3,11 @@ from collections import Counter
 from datetime import datetime
 from enum import Enum
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import parse_qs, urlparse
 
 from pydantic import BaseModel, Field, ValidationError
+
+from src.tinybird.client import tinybird
 
 
 class EventType(str, Enum):
@@ -24,12 +27,37 @@ class Event(BaseModel):
 
 
 class EventsView:
-    def get(self):
+    def get(self, query_params):
+        print(f"Received GET request with query params: {query_params}")
         return {"data": "Events view"}
 
     def post(self, data):
-        print(f"Received data: {data}")
-        return {"data": "Events view"}
+        valid_events = []
+        invalid_events = []
+        event_ids = [event_data["event_id"] for event_data in data["events"]]
+        id_counts = Counter(event_ids)
+        duplicate_events = sum(c - 1 for c in id_counts.values() if c > 1)
+
+        for event_data in data["events"]:
+            try:
+                event = Event(**event_data)
+                print(f"Validated event: {event}")
+                valid_events.append(event_data)
+            except ValidationError as e:
+                invalid_events.append({"event": event_data, "errors": e.errors()})
+
+        # tinybird.ecommerce_events.ingest(valid_events)
+
+        response = {
+            "total_events": len(data["events"]),
+            "count_valid_events": len(valid_events),
+            "count_invalid_events": len(invalid_events),
+            "count_duplicate_events": duplicate_events,
+            "invalid_events": invalid_events,
+            "valid_events": valid_events,
+        }
+
+        return response
 
 
 routes = {
@@ -46,9 +74,13 @@ class SimpleAPIHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
 
-        if self.path in routes:
-            view = routes[self.path]()
-            response = view.get()
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+
+        if path in routes:
+            view = routes[path]()
+            query_params = parse_qs(parsed_url.query)
+            response = view.get(query_params)
             self._set_headers()
             self.wfile.write(json.dumps(response).encode())
         else:
@@ -56,39 +88,19 @@ class SimpleAPIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": "Not found"}).encode())
 
     def do_POST(self):
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
 
         if self.path in routes:
 
-            valid_events = []
-            invalid_events = []
-
-            view = routes[self.path]()
+            view = routes[path]()
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode())
-
-            event_ids = [event_data["event_id"] for event_data in data["events"]]
-            id_counts = Counter(event_ids)
-            duplicate_events = sum(c - 1 for c in id_counts.values() if c > 1)
-
-            for event_data in data["events"]:
-                try:
-                    event = Event(**event_data)
-                    print(f"Validated event: {event}")
-                    valid_events.append(event_data)
-                except ValidationError as e:
-                    invalid_events.append({"event": event_data, "errors": e.errors()})
-
-            response = {
-                "total_events": len(data["events"]),
-                "count_valid_events": len(valid_events),
-                "count_invalid_events": len(invalid_events),
-                "count_duplicate_events": duplicate_events,
-                "invalid_events": invalid_events,
-                "valid_events": valid_events,
-            }
+            response = view.post(data)
             self._set_headers()
             self.wfile.write(json.dumps(response).encode())
+            return
         else:
             self._set_headers(404)
             self.wfile.write(json.dumps({"error": "Not found"}).encode())
