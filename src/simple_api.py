@@ -29,23 +29,58 @@ class Event(BaseModel):
 class EventsView:
     def get(self, query_params):
 
+        start_date = query_params.get("start_date", ["2026-01-01 00:00:00"])[0]
+        end_date = query_params.get("end_date", ["2026-12-31 23:59:59"])[0]
+        country = query_params.get("country", ["VE"])[0]
+
         ecommerce_summary_result = tinybird.ecommerce_summary.query(
             {
-                "start_date": "2026-01-01 00:00:00",
-                "end_date": "2026-12-31 23:59:59",
-                "country": "VE",
+                "start_date": start_date,
+                "end_date": end_date,
+                "country": country,
             }
         )
 
-        response = {}
+        ecommerce_top_products_result = tinybird.ecommerce_top_products.query(
+            {
+                "start_date": start_date,
+                "end_date": end_date,
+                "country": country,
+            }
+        )
 
-        print("--- E-commerce Summary ---")
-        for key, value in ecommerce_summary_result["data"][0].items():
-            response[key] = value
-            print(f"{key}: {value}")
+        sumary_metrics = {
+            "total_revenue": ecommerce_summary_result["data"][0]["total_revenue"],
+            "purchases": ecommerce_summary_result["data"][0]["purchases"],
+            "product_views": ecommerce_summary_result["data"][0]["product_views"],
+            "unique_users": ecommerce_summary_result["data"][0]["unique_users"],
+        }
 
-        print(f"Received GET request with query params: {query_params}")
-        return {"data": response}
+        if sumary_metrics["product_views"] > 0:
+            sumary_metrics["conversion_rate"] = (
+                sumary_metrics["purchases"] / sumary_metrics["product_views"]
+            )
+        else:
+            sumary_metrics["conversion_rate"] = 0
+
+        top_products = [
+            {
+                "product_id": row["product_id"],
+                "purchase_count": row["purchase_count"],
+                "revenue": row["revenue"],
+            }
+            for row in ecommerce_top_products_result["data"]
+        ]
+
+        return {
+            "data": {
+                "start_date": start_date,
+                "end_date": end_date,
+                "country": country,
+                "summary": sumary_metrics,
+                "top_products": top_products,
+            }
+        }
 
     def post(self, data):
         valid_events = []
