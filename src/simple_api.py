@@ -28,8 +28,24 @@ class Event(BaseModel):
 
 class EventsView:
     def get(self, query_params):
+
+        ecommerce_summary_result = tinybird.ecommerce_summary.query(
+            {
+                "start_date": "2026-01-01 00:00:00",
+                "end_date": "2026-12-31 23:59:59",
+                "country": "VE",
+            }
+        )
+
+        response = {}
+
+        print("--- E-commerce Summary ---")
+        for key, value in ecommerce_summary_result["data"][0].items():
+            response[key] = value
+            print(f"{key}: {value}")
+
         print(f"Received GET request with query params: {query_params}")
-        return {"data": "Events view"}
+        return {"data": response}
 
     def post(self, data):
         valid_events = []
@@ -46,15 +62,19 @@ class EventsView:
             except ValidationError as e:
                 invalid_events.append({"event": event_data, "errors": e.errors()})
 
-        # tinybird.ecommerce_events.ingest(valid_events)
+        for event in valid_events:
+            print(f"Ingesting event: {event}")
+            tinybird.ecommerce_events.ingest(event)
 
         response = {
-            "total_events": len(data["events"]),
-            "count_valid_events": len(valid_events),
-            "count_invalid_events": len(invalid_events),
-            "count_duplicate_events": duplicate_events,
-            "invalid_events": invalid_events,
-            "valid_events": valid_events,
+            "data": {
+                "total_events": len(data["events"]),
+                "count_valid_events": len(valid_events),
+                "count_invalid_events": len(invalid_events),
+                "count_duplicate_events": duplicate_events,
+                "invalid_events": invalid_events,
+                "valid_events": valid_events,
+            }
         }
 
         return response
