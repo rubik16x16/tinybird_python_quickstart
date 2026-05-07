@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from datetime import datetime
 from enum import Enum
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -57,26 +58,35 @@ class SimpleAPIHandler(BaseHTTPRequestHandler):
     def do_POST(self):
 
         if self.path in routes:
+
+            valid_events = []
+            invalid_events = []
+
             view = routes[self.path]()
             content_length = int(self.headers["Content-Length"])
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode())
 
+            event_ids = [event_data["event_id"] for event_data in data["events"]]
+            id_counts = Counter(event_ids)
+            duplicate_events = sum(c - 1 for c in id_counts.values() if c > 1)
+
             for event_data in data["events"]:
                 try:
                     event = Event(**event_data)
                     print(f"Validated event: {event}")
+                    valid_events.append(event_data)
                 except ValidationError as e:
-                    # print(f"Invalid event data: {e}")
-                    self._set_headers(400)
-                    self.wfile.write(
-                        json.dumps(
-                            {"message": "Invalid event data", "errors": e.errors()}
-                        ).encode()
-                    )
-                    return
+                    invalid_events.append({"event": event_data, "errors": e.errors()})
 
-            response = view.post(data)
+            response = {
+                "total_events": len(data["events"]),
+                "count_valid_events": len(valid_events),
+                "count_invalid_events": len(invalid_events),
+                "count_duplicate_events": duplicate_events,
+                "invalid_events": invalid_events,
+                "valid_events": valid_events,
+            }
             self._set_headers()
             self.wfile.write(json.dumps(response).encode())
         else:
